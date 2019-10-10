@@ -15,16 +15,60 @@ public class ProxyMann {
 	}
 	
 	private ArrayList<Proxy> proxies = new ArrayList<Proxy>();
-	
-	public ProxyMann() {
+			
+	public int createProxy(String name, int hostPort, String targetIp, int targetPort) {
 		try {
-			InetAddress ip = InetAddress.getByName("moonquest.com");
-			this.proxies.add(new Proxy(4444, ip.getHostAddress(), 80));
-		} catch (IOException e) {
+			if(!isNameAvailable(name)) {return -3;}
+			if(!isPortAvailable(hostPort)) {return -4;}			
+			Proxy proxy = new Proxy(hostPort, targetIp, targetPort);
+			proxy.setName(name);
+			if(!proxies.add(proxy)) {
+				proxy.close();
+				return -2;
+			}
+		}catch(IOException e) {
 			e.printStackTrace();
+			return -1;
 		}
+		return 1;
 	}
-		
+	
+	public boolean removeProxy(String name) {
+		for(int i = 0; i < proxies.size(); i++) {
+			if(proxies.get(i).getName().equals(name)) {
+				proxies.remove(i);
+				return true;
+			}
+		}
+		return false;
+	}	
+	
+	public boolean isNameAvailable(String name) {
+		for(Proxy p : proxies) {
+			if(p.getName().equals(name)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	public boolean isPortAvailable(int port) {
+		for(Proxy p : proxies) {
+			if(p.getHostPort() == port) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	public Proxy[] getProxies() {
+		Proxy[] pa = new Proxy[proxies.size()];
+		for(int i = 0; i < pa.length; i++) {
+			pa[i] = proxies.get(i);
+		}
+		return pa;
+	}
+	
 	public Proxy createProxy(int hostPort, String targetIp, int targetPort) {
 		Proxy proxy = null;
 		try {
@@ -107,6 +151,24 @@ class Proxy implements Runnable {
 			}
 		}
 		
+	}
+	
+	public void close() {
+		try {
+			server.close();
+			
+			thread.interrupt();
+			thread = null;
+			
+			for(int i = 0; i < connections.size(); i++) {
+				connections.get(i).close();
+			}
+			connections.clear();
+			
+			connections = null;
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 }
